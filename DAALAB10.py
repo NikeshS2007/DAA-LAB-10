@@ -1,0 +1,79 @@
+import random
+import sys
+import time
+
+sys.setrecursionlimit(20000)
+
+comparisons = 0
+
+
+def partition(arr, low, high):
+    global comparisons
+    pivot = arr[high]
+    i = low - 1
+    for j in range(low, high):
+        comparisons += 1
+        if arr[j] <= pivot:
+            i += 1
+            arr[i], arr[j] = arr[j], arr[i]
+    arr[i + 1], arr[high] = arr[high], arr[i + 1]
+    return i + 1
+
+
+def deterministic_quicksort(arr, low, high):
+    if low < high:
+        pi = partition(arr, low, high)
+        deterministic_quicksort(arr, low, pi - 1)
+        deterministic_quicksort(arr, pi + 1, high)
+
+
+def randomized_quicksort(arr, low, high):
+    if low < high:
+        rand_idx = random.randint(low, high)
+        arr[rand_idx], arr[high] = arr[high], arr[rand_idx]
+        pi = partition(arr, low, high)
+        randomized_quicksort(arr, low, pi - 1)
+        randomized_quicksort(arr, pi + 1, high)
+
+
+def run_test(name, sort_fn, arr):
+    global comparisons
+    a = arr[:]
+    comparisons = 0
+    start = time.perf_counter()
+    sort_fn(a, 0, len(a) - 1)
+    elapsed = (time.perf_counter() - start) * 1000
+    return comparisons, elapsed
+
+
+# Updated parameters and input data
+N = 4000
+random.seed(42)  # Seeded for reproducible comparison runs
+
+test_cases = {
+    "Random Floats": [
+        round(random.uniform(-50000.0, 50000.0), 2) for _ in range(N)
+    ],
+    "Sorted Evens": [1000 + i * 2 for i in range(N)],
+    "Reverse Step": [50000 - i * 5 for i in range(N)],
+    "Nearly Sorted": [1000 + i * 2 for i in range(N)],
+    "Many Duplicates": [random.randint(1, 10) for _ in range(N)],
+}
+
+# Apply minor random swaps to 'Nearly Sorted'
+ns = test_cases["Nearly Sorted"]
+for _ in range(N // 25):
+    i, j = random.randint(0, N - 1), random.randint(0, N - 1)
+    ns[i], ns[j] = ns[j], ns[i]
+
+# Header and Execution
+header = f"{'Input Type':<18} {'DQS Comps':>12} {'DQS Time(ms)':>14} {'RQS Comps':>12} {'RQS Time(ms)':>14}"
+print(header)
+print("-" * len(header))
+
+for case, arr in test_cases.items():
+    d_comps, d_time = run_test("DQS", deterministic_quicksort, arr)
+    r_comps, r_time = run_test("RQS", randomized_quicksort, arr)
+    print(
+        f"{case:<18} {d_comps:>12} {d_time:>14.2f} {r_comps:>12} {r_time:>14.2f}"
+    )
